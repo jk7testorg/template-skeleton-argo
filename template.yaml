@@ -1,64 +1,46 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
+
 metadata:
-  name: enhance-existing-repo
-  title: Enhance Existing Repo with Backstage Files
-  description: Adds Backstage metadata and standard files to an existing repo
+  name: argo-scaffolder
+  title: Argo Scaffolder
+  description: Add Backstage Integration up to ArgoCD for Existing Repo
 spec:
   owner: platform-team
   type: service
-
+  
   parameters:
-    - title: Repository Info
+    - title: Fill in some steps
       required:
         - repoUrl
-        - newRepoName
+        - new_component_name
       properties:
         repoUrl:
-          title: Existing Repository URL
+          title: Repository URL
           type: string
-          ui:field: RepoUrlPicker
-        newRepoName:
-          title: New Repository Name
+          description: Provide a repo url
+        new_component_name:
+          title: Name
           type: string
-
+          description: The name for the Template created by this
   steps:
-    # 1. Clone existing repo
-    - id: fetch-base
-      name: Fetch Existing Repo
-      action: fetch:plain
-      input:
-        url: ${{ parameters.repoUrl }}
-
-    # 2. Fetch your template files
-    - id: fetch-template
-      name: Fetch Template Files
+    - id: fetch
+      name: Copy Files
       action: fetch:template
       input:
         url: ./skeleton
         values:
-          name: ${{ parameters.newRepoName }}
-
-    # 3. Merge files
-    - id: merge
-      name: Merge Template into Repo
-      action: fs:merge
+          name: ${{parameters.new_component_name}}
+    - id: debug
+      action: debug:log
       input:
-        source: ./template
-        target: .
-
-    # 4. Publish to GitHub
-    - id: publish
-      name: Publish Repo
-      action: publish:github
+        message: ${{ parameters.repoUrl }}
+    - id: pr
+      name: Create PR
+      action: publish:github:pull-request
       input:
-        repoUrl: github.com?repo=${{ parameters.newRepoName }}&owner=YOUR_ORG
-        defaultBranch: main
-
-    # 5. Register in Backstage
-    - id: register
-      name: Register in Catalog
-      action: catalog:register
-      input:
-        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
-        catalogInfoPath: /catalog-info.yaml
+        repoUrl: ${{ parameters.repoUrl }}
+        branchName: backstage/add-files
+        title: Add Backstage files
+        description: Add Backstage catalog metadata and template files
+        sourcePath: .
