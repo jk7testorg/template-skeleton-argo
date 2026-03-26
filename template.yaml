@@ -1,0 +1,64 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: enhance-existing-repo
+  title: Enhance Existing Repo with Backstage Files
+  description: Adds Backstage metadata and standard files to an existing repo
+spec:
+  owner: platform-team
+  type: service
+
+  parameters:
+    - title: Repository Info
+      required:
+        - repoUrl
+        - newRepoName
+      properties:
+        repoUrl:
+          title: Existing Repository URL
+          type: string
+          ui:field: RepoUrlPicker
+        newRepoName:
+          title: New Repository Name
+          type: string
+
+  steps:
+    # 1. Clone existing repo
+    - id: fetch-base
+      name: Fetch Existing Repo
+      action: fetch:plain
+      input:
+        url: ${{ parameters.repoUrl }}
+
+    # 2. Fetch your template files
+    - id: fetch-template
+      name: Fetch Template Files
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.newRepoName }}
+
+    # 3. Merge files
+    - id: merge
+      name: Merge Template into Repo
+      action: fs:merge
+      input:
+        source: ./template
+        target: .
+
+    # 4. Publish to GitHub
+    - id: publish
+      name: Publish Repo
+      action: publish:github
+      input:
+        repoUrl: github.com?repo=${{ parameters.newRepoName }}&owner=YOUR_ORG
+        defaultBranch: main
+
+    # 5. Register in Backstage
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
