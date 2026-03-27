@@ -33,11 +33,18 @@ spec:
       name: Fetch Base
       action: fetch:template
       input:
-        url: ./template
+        url: .
         values:
           app_name: ${{'$'}}{{parameters.component_id}}
           app_env: ${{'$'}}{{parameters.environment}}
-
+          
+    - id: remove-template-files
+      name: Remove Template.yaml file
+      action: fs:delete
+      input:
+        files:
+          - template.yaml
+          
     - id: publish
       name: Publish
       action: publish:github
@@ -58,7 +65,7 @@ spec:
       action: catalog:register
       input:
         repoContentsUrl: ${{'$'}}{{ steps.publish.output.repoContentsUrl }}
-        catalogInfoPath: "/catalog-info.yaml"
+        catalogInfoPath: "main/template/catalog-info.yaml"
 
     - id: create-k8s-folder
       name: Create K8s Folder
